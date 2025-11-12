@@ -3,7 +3,7 @@
  * Plugin Name: Pixa AI Assistant
  * Plugin URI: https://javapixa.com
  * Description: AI-powered writing assistant using Google Gemini to generate content and optimize articles for SEO
- * Version: 2.2.2
+ * Version: 2.3.1
  * Author: Javapixa Creative Studio
  * License: GPL v2 or later
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('PIXA_AI_VERSION', '2.2.2');
+define('PIXA_AI_VERSION', '2.3.1');
 define('PIXA_AI_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('PIXA_AI_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -61,47 +61,187 @@ class Pixa_AI_Assistant {
         }
 
         if (isset($_GET['settings-updated'])) {
-            add_settings_error('gwa_messages', 'gwa_message', 'Settings Saved', 'updated');
+            add_settings_error('gwa_messages', 'gwa_message', 'Settings Saved Successfully!', 'updated');
         }
+
+        // Get usage statistics
+        $users = get_users(array('fields' => 'ID'));
+        $total_generate = 0;
+        $total_analyze = 0;
+        $total_optimize = 0;
+        $user_count = 0;
+
+        foreach ($users as $user_id) {
+            $usage = get_user_meta($user_id, 'pixa_ai_usage_' . $user_id, true);
+            if (is_array($usage)) {
+                $total_generate += isset($usage['generate']) ? $usage['generate'] : 0;
+                $total_analyze += isset($usage['analyze']) ? $usage['analyze'] : 0;
+                $total_optimize += isset($usage['optimize']) ? $usage['optimize'] : 0;
+                if (!empty($usage['generate']) || !empty($usage['analyze']) || !empty($usage['optimize'])) {
+                    $user_count++;
+                }
+            }
+        }
+
+        $total_requests = $total_generate + $total_analyze + $total_optimize;
 
         settings_errors('gwa_messages');
         ?>
-        <div class="wrap">
-            <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
-            <form action="options.php" method="post">
-                <?php
-                settings_fields('gwa_settings');
-                ?>
-                <table class="form-table">
-                    <tr>
-                        <th scope="row">
-                            <label for="<?php echo $this->option_name; ?>">Gemini API Key</label>
-                        </th>
-                        <td>
+        <div class="pixa-ai-settings-wrap">
+            <!-- Header -->
+            <div class="pixa-ai-header">
+                <div class="pixa-ai-header-content">
+                    <div class="pixa-ai-logo-section">
+                        <img src="https://www.javapixa.com/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Flogo_symbol.d3d80f6b.png&w=256&q=75" alt="Pixa AI" class="pixa-ai-logo">
+                        <div>
+                            <h1>Pixa AI Assistant</h1>
+                            <p>AI-Powered Content Generation & Optimization</p>
+                        </div>
+                    </div>
+                    <div class="pixa-ai-version">
+                        <span class="version-badge">v<?php echo PIXA_AI_VERSION; ?></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pixa-ai-container">
+                <!-- Analytics Dashboard -->
+                <div class="pixa-ai-section pixa-ai-analytics">
+                    <h2>📊 Usage Analytics</h2>
+                    <div class="pixa-ai-stats-grid">
+                        <div class="pixa-ai-stat-card pixa-ai-stat-primary">
+                            <div class="stat-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#dc143c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-value"><?php echo number_format($total_requests); ?></div>
+                                <div class="stat-label">Total Requests</div>
+                            </div>
+                        </div>
+                        <div class="pixa-ai-stat-card pixa-ai-stat-success">
+                            <div class="stat-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#28a745" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 20h9"/>
+                                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-value"><?php echo number_format($total_generate); ?></div>
+                                <div class="stat-label">Content Generated</div>
+                            </div>
+                        </div>
+                        <div class="pixa-ai-stat-card pixa-ai-stat-info">
+                            <div class="stat-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#3d81f5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-value"><?php echo number_format($total_analyze); ?></div>
+                                <div class="stat-label">Articles Analyzed</div>
+                            </div>
+                        </div>
+                        <div class="pixa-ai-stat-card pixa-ai-stat-warning">
+                            <div class="stat-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#ffc107" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <circle cx="12" cy="12" r="6"/>
+                                    <circle cx="12" cy="12" r="2"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-value"><?php echo number_format($total_optimize); ?></div>
+                                <div class="stat-label">SEO Optimized</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <?php if ($total_requests > 0): ?>
+                    <div class="pixa-ai-chart-container" style="margin-top: 20px;width: 100%;">
+                        <h3>Request Distribution</h3>
+                        <canvas id="pixaUsageChart" width="400" height="200"></canvas>
+                    </div>
+                    <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const ctx = document.getElementById('pixaUsageChart');
+                        if (ctx) {
+                            new Chart(ctx, {
+                                type: 'doughnut',
+                                data: {
+                                    labels: ['Content Generation', 'Article Analysis', 'SEO Optimization'],
+                                    datasets: [{
+                                        data: [<?php echo $total_generate; ?>, <?php echo $total_analyze; ?>, <?php echo $total_optimize; ?>],
+                                        backgroundColor: ['#dc143c', '#3d81f5', '#ffc107'],
+                                        borderWidth: 0
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: {
+                                        legend: {
+                                            position: 'bottom'
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    });
+                    </script>
+                    <?php endif; ?>
+
+                    <div class="pixa-ai-info-box">
+                        <p><strong>👥 Active Users:</strong> <?php echo $user_count; ?> user(s) have used the AI assistant</p>
+                    </div>
+                </div>
+
+                <!-- Settings Form -->
+                <div class="pixa-ai-section pixa-ai-settings-form">
+                    <h2>⚙️ Configuration</h2>
+                    <form action="options.php" method="post" class="pixa-ai-form">
+                        <?php settings_fields('gwa_settings'); ?>
+
+                        <div class="pixa-ai-form-group">
+                            <label for="<?php echo $this->option_name; ?>">
+                                <span class="label-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#dc143c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                    </svg>
+                                </span>
+                                Gemini API Key
+                            </label>
                             <input type="text"
                                    id="<?php echo $this->option_name; ?>"
                                    name="<?php echo $this->option_name; ?>"
                                    value="<?php echo esc_attr(get_option($this->option_name)); ?>"
-                                   class="regular-text"
+                                   class="pixa-ai-input"
                                    placeholder="Enter your Gemini API key">
-                            <p class="description">
-                                Get your API key from <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a>
+                            <p class="pixa-ai-help">
+                                Get your API key from <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio →</a>
                             </p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row">
-                            <label for="<?php echo $this->model_option_name; ?>">Gemini Model</label>
-                        </th>
-                        <td>
+                        </div>
+
+                        <div class="pixa-ai-form-group">
+                            <label for="<?php echo $this->model_option_name; ?>">
+                                <span class="label-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#3d81f5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                                    </svg>
+                                </span>
+                                AI Model
+                            </label>
                             <select id="<?php echo $this->model_option_name; ?>"
                                     name="<?php echo $this->model_option_name; ?>"
-                                    class="regular-text">
+                                    class="pixa-ai-select">
                                 <?php
                                 $models = array(
-                                    'gemini-2.5-pro' => 'Gemini 2.5 Pro',
-                                    'gemini-2.5-flash' => 'Gemini 2.5 Flash (Default)',
-                                    'gemini-2.5-flash-lite' => 'Gemini 2.5 Flash Lite',
+                                    'gemini-2.5-pro' => 'Gemini 2.5 Pro - Highest Quality',
+                                    'gemini-2.5-flash' => 'Gemini 2.5 Flash - Recommended ⭐',
+                                    'gemini-2.5-flash-lite' => 'Gemini 2.5 Flash Lite - Fastest',
                                     'gemini-2.0-flash' => 'Gemini 2.0 Flash',
                                     'gemini-2.0-flash-lite' => 'Gemini 2.0 Flash Lite',
                                     'gemini-1.5-pro' => 'Gemini 1.5 Pro',
@@ -116,19 +256,106 @@ class Pixa_AI_Assistant {
                                 }
                                 ?>
                             </select>
-                            <p class="description">
-                                Select which Gemini model to use for content generation
+                            <p class="pixa-ai-help">
+                                Choose the AI model for content generation. Flash models offer best speed/quality balance.
                             </p>
-                        </td>
-                    </tr>
-                </table>
-                <?php submit_button('Save Settings'); ?>
-            </form>
+                        </div>
+
+                        <div class="pixa-ai-form-actions">
+                            <button type="submit" class="pixa-ai-btn pixa-ai-btn-primary">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                    <polyline points="17 21 17 13 7 13 7 21"/>
+                                    <polyline points="7 3 7 8 15 8"/>
+                                </svg>
+                                Save Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Quick Guide -->
+                <div class="pixa-ai-section pixa-ai-guide">
+                    <h2>🚀 Quick Start Guide</h2>
+                    <div class="pixa-ai-steps">
+                        <div class="pixa-ai-step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h4>Get API Key</h4>
+                                <p>Sign up at Google AI Studio and generate your API key</p>
+                            </div>
+                        </div>
+                        <div class="pixa-ai-step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h4>Configure Settings</h4>
+                                <p>Add your API key and select preferred AI model</p>
+                            </div>
+                        </div>
+                        <div class="pixa-ai-step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h4>Start Creating</h4>
+                                <p>Click the floating button in post editor to generate content</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pixa-ai-features-grid">
+                        <div class="pixa-ai-feature">
+                            <span class="feature-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#dc143c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 20h9"/>
+                                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                </svg>
+                            </span>
+                            <h4>Generate Content</h4>
+                            <p>Create blog posts in Indonesian or English with various tones</p>
+                        </div>
+                        <div class="pixa-ai-feature">
+                            <span class="feature-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#3d81f5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>
+                                    <path d="M22 12A10 10 0 0 0 12 2v10z"/>
+                                </svg>
+                            </span>
+                            <h4>Analyze Articles</h4>
+                            <p>Get comprehensive analysis and improvement suggestions</p>
+                        </div>
+                        <div class="pixa-ai-feature">
+                            <span class="feature-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#28a745" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                                </svg>
+                            </span>
+                            <h4>SEO Optimization</h4>
+                            <p>Optimize content for better search engine rankings</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="pixa-ai-footer">
+                <p>Made with ❤️ by <a href="https://javapixa.com" target="_blank">Javapixa Creative Studio</a></p>
+            </div>
         </div>
         <?php
     }
 
     public function enqueue_admin_assets($hook) {
+        // Enqueue for post editor
+        if ($hook === 'post.php' || $hook === 'post-new.php') {
+            wp_enqueue_style('pixa-ai-admin-style', PIXA_AI_PLUGIN_URL . 'assets/css/admin-style.css', array(), PIXA_AI_VERSION);
+            wp_enqueue_script('pixa-ai-admin-script', PIXA_AI_PLUGIN_URL . 'assets/js/admin-script.js', array('jquery'), PIXA_AI_VERSION, true);
+        }
+
+        // Enqueue for settings page
+        if ($hook === 'settings_page_gemini-writing-assistant') {
+            wp_enqueue_style('pixa-ai-settings-style', PIXA_AI_PLUGIN_URL . 'assets/css/settings-style.css', array(), PIXA_AI_VERSION);
+            wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js', array(), '4.4.0', true);
+        }
+
         if ($hook !== 'post.php' && $hook !== 'post-new.php') {
             return;
         }
@@ -302,7 +529,7 @@ class Pixa_AI_Assistant {
             'english' => 'Write in English. '
         );
         $language_instruction = isset($language_map[$language]) ? $language_map[$language] : $language_map['indonesian'];
-        
+
         $tone_instruction = "Write in a {$tone} tone. ";
 
         $body = json_encode(array(
@@ -440,11 +667,11 @@ class Pixa_AI_Assistant {
     private function check_rate_limit() {
         $user_id = get_current_user_id();
         $rate_key = 'pixa_ai_rate_limit_' . $user_id;
-        
+
         if (get_transient($rate_key)) {
             return false;
         }
-        
+
         set_transient($rate_key, true, $this->rate_limit_seconds);
         return true;
     }
@@ -456,7 +683,7 @@ class Pixa_AI_Assistant {
         $user_id = get_current_user_id();
         $usage_key = 'pixa_ai_usage_' . $user_id;
         $usage = get_user_meta($user_id, $usage_key, true);
-        
+
         if (!is_array($usage)) {
             $usage = array(
                 'generate' => 0,
@@ -464,11 +691,11 @@ class Pixa_AI_Assistant {
                 'optimize' => 0
             );
         }
-        
+
         if (isset($usage[$type])) {
             $usage[$type]++;
         }
-        
+
         update_user_meta($user_id, $usage_key, $usage);
     }
 
