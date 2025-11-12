@@ -3,7 +3,7 @@
  * Plugin Name: Pixa AI Assistant
  * Plugin URI: https://javapixa.com
  * Description: AI-powered writing assistant using Google Gemini to generate content and optimize articles for SEO
- * Version: 2.0.0
+ * Version: 2.0.2
  * Author: Javapixa Creative Studio
  * License: GPL v2 or later
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('PIXA_AI_VERSION', '2.0.0');
+define('PIXA_AI_VERSION', '2.0.2');
 define('PIXA_AI_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('PIXA_AI_PLUGIN_URL', plugin_dir_url(__FILE__));
 

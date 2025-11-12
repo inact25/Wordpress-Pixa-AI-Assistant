@@ -129,9 +129,13 @@
             $('.gwa-tab-btn').removeClass('active');
             $(this).addClass('active');
 
-            $('.gwa-tab-content').removeClass('active');
-            $('#gwa-' + tab + '-tab').addClass('active');
+            // Hide all tabs first
+            $('.gwa-tab-content').removeClass('active').hide();
 
+            // Show and activate the selected tab
+            $('#gwa-' + tab + '-tab').addClass('active').show();
+
+            // Hide result, error, and loading panels
             $('#gwa-result').hide();
             $('#gwa-error').hide();
             $('#gwa-loading').hide();
@@ -166,7 +170,7 @@
                 showError(pixaAiData.strings.error_no_content);
                 return;
             }
-            
+
             if (content.length > pixaAiData.maxContentLength) {
                 showError(pixaAiData.strings.error_content_too_long);
                 return;
@@ -187,7 +191,7 @@
                 showError(pixaAiData.strings.error_no_content);
                 return;
             }
-            
+
             if (content.length > pixaAiData.maxContentLength) {
                 showError(pixaAiData.strings.error_content_too_long);
                 return;
@@ -262,7 +266,7 @@
 
         function optimizeContent(content) {
             showLoading();
-
+            $('gwa-info-box').hide();
             $.ajax({
                 url: pixaAiData.ajaxUrl,
                 type: 'POST',
@@ -273,9 +277,10 @@
                 },
                 success: function(response) {
                     hideLoading();
+                    $('gwa-info-box').show();
 
                     if (response.success) {
-                        showResult(response.data.content);
+                        showResult(response.data.content, 'Optimized Content');
                     } else {
                         const errorMsg = response.data && response.data.message ? response.data.message : 'An error occurred';
                         showError(errorMsg);
@@ -283,6 +288,7 @@
                 },
                 error: function(xhr, status, error) {
                     hideLoading();
+                    $('gwa-info-box').show();
                     showError('Network error: ' + error);
                 }
             });
@@ -313,18 +319,18 @@
         }
 
         function showLoading() {
-            $('#gwa-loading').show();
+            // Hide everything and show only loading
+            $('.gwa-tab-content').hide();
             $('#gwa-result').hide();
             $('#gwa-error').hide();
-            $('.gwa-tab-content').hide();
+            $('#gwa-loading').show();
         }
 
         function hideLoading() {
             $('#gwa-loading').hide();
-            $('.gwa-tab-content.active').show();
         }
 
-        function showResult(content) {
+        function showResult(content, title) {
             let formattedContent = content.trim();
 
             if (formattedContent.startsWith('```html')) {
@@ -333,11 +339,13 @@
                 formattedContent = formattedContent.replace(/^```\n?/, '').replace(/```$/, '').trim();
             }
 
-            $('#gwa-result-header h3').text('Generated Content');
+            $('#gwa-result-header h3').text(title || 'Generated Content');
             $('#gwa-insert-btn').show();
             $('#gwa-result-content').html(formattedContent);
+
+            // Hide all tab content forms and show result
+            $('.gwa-tab-content').hide();
             $('#gwa-result').show();
-            $('.gwa-tab-content.active').show();
         }
 
         function showAnalysisResult(analysis) {
@@ -352,12 +360,15 @@
             $('#gwa-result-header h3').text('Article Analysis');
             $('#gwa-insert-btn').hide();
             $('#gwa-result-content').html(formattedAnalysis);
+
+            // Hide all tab content forms and show result
+            $('.gwa-tab-content').hide();
             $('#gwa-result').show();
-            $('.gwa-tab-content.active').show();
         }
 
         function showError(message) {
             $('#gwa-error').html('<strong>Error:</strong> ' + message).show();
+            // Show the active tab when error occurs
             $('.gwa-tab-content.active').show();
             setTimeout(function() {
                 $('#gwa-error').fadeOut();
