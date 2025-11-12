@@ -164,9 +164,20 @@
     font-size: 14px;
 }
 
+.gwa-form-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
 .gwa-form-group {
     margin-bottom: 20px;
     width: 100%;
+}
+
+.gwa-form-group-half {
+    flex: 1;
+    margin-bottom: 0;
 }
 
 .gwa-form-group label {
@@ -331,5 +342,14 @@
     .gwa-tab-btn {
         width: 100%;
         text-align: left;
+    }
+
+    .gwa-form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .gwa-form-group-half {
+        margin-bottom: 20px;
     }
 }

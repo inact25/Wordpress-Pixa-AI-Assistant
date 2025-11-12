@@ -35,18 +35,27 @@
                         </div>
                         
                         <div id="gwa-generate-tab" class="gwa-tab-content active">
-                            <div class="gwa-form-group">
-                                <label for="gwa-tone">Tone:</label>
-                                <select id="gwa-tone" class="gwa-select">
-                                    <option value="professional">Professional</option>
-                                    <option value="casual">Casual</option>
-                                    <option value="humorous">Humorous</option>
-                                    <option value="educational">Educational</option>
-                                    <option value="inspirational">Inspirational</option>
-                                    <option value="persuasive">Persuasive</option>
-                                    <option value="formal">Formal</option>
-                                    <option value="friendly">Friendly</option>
-                                </select>
+                            <div class="gwa-form-row">
+                                <div class="gwa-form-group gwa-form-group-half">
+                                    <label for="gwa-language">Language:</label>
+                                    <select id="gwa-language" class="gwa-select">
+                                        <option value="indonesian" selected>Indonesian (Bahasa Indonesia)</option>
+                                        <option value="english">English</option>
+                                    </select>
+                                </div>
+                                <div class="gwa-form-group gwa-form-group-half">
+                                    <label for="gwa-tone">Tone:</label>
+                                    <select id="gwa-tone" class="gwa-select">
+                                        <option value="professional">Professional</option>
+                                        <option value="casual">Casual</option>
+                                        <option value="humorous">Humorous</option>
+                                        <option value="educational">Educational</option>
+                                        <option value="inspirational">Inspirational</option>
+                                        <option value="persuasive">Persuasive</option>
+                                        <option value="formal">Formal</option>
+                                        <option value="friendly">Friendly</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="gwa-form-group">
                                 <label for="gwa-prompt">Describe what you want to write about:</label>
@@ -144,6 +153,7 @@
         $('#gwa-generate-btn').on('click', function() {
             const prompt = $('#gwa-prompt').val().trim();
             const tone = $('#gwa-tone').val();
+            const language = $('#gwa-language').val();
 
             if (!prompt) {
                 showError(pixaAiData.strings.error_prompt_required);
@@ -155,7 +165,7 @@
                 return;
             }
 
-            generateContent(prompt, tone);
+            generateContent(prompt, tone, language);
         });
 
         $('#gwa-analyze-btn').on('click', function() {
@@ -207,7 +217,10 @@
             resetModal();
         });
 
-        function generateContent(prompt, tone) {
+        function generateContent(prompt, tone, language, retryCount) {
+            retryCount = retryCount || 0;
+            const maxRetries = 2;
+            
             showLoading();
 
             $.ajax({
@@ -217,7 +230,8 @@
                     action: 'gwa_generate_content',
                     nonce: pixaAiData.nonce,
                     prompt: prompt,
-                    tone: tone
+                    tone: tone,
+                    language: language || 'indonesian'
                 },
                 success: function(response) {
                     hideLoading();
@@ -226,7 +240,17 @@
                         showResult(response.data.content);
                     } else {
                         const errorMsg = response.data && response.data.message ? response.data.message : 'An error occurred';
-                        showError(errorMsg);
+                        
+                        // Check if it's a retryable error (503, overloaded)
+                        if (retryCount < maxRetries && errorMsg.includes('overloaded')) {
+                            const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s
+                            showRetryMessage('API is busy. Retrying in ' + (delay/1000) + ' seconds...');
+                            setTimeout(function() {
+                                generateContent(prompt, tone, language, retryCount + 1);
+                            }, delay);
+                        } else {
+                            showError(errorMsg);
+                        }
                     }
                 },
                 error: function(xhr, status, error) {
@@ -236,7 +260,10 @@
             });
         }
 
-        function analyzeContent(content) {
+        function analyzeContent(content, retryCount) {
+            retryCount = retryCount || 0;
+            const maxRetries = 2;
+            
             showLoading();
 
             $.ajax({
@@ -254,7 +281,17 @@
                         showAnalysisResult(response.data.analysis);
                     } else {
                         const errorMsg = response.data && response.data.message ? response.data.message : 'An error occurred';
-                        showError(errorMsg);
+                        
+                        // Check if it's a retryable error
+                        if (retryCount < maxRetries && errorMsg.includes('overloaded')) {
+                            const delay = Math.pow(2, retryCount) * 1000;
+                            showRetryMessage('API is busy. Retrying in ' + (delay/1000) + ' seconds...');
+                            setTimeout(function() {
+                                analyzeContent(content, retryCount + 1);
+                            }, delay);
+                        } else {
+                            showError(errorMsg);
+                        }
                     }
                 },
                 error: function(xhr, status, error) {
@@ -264,9 +301,12 @@
             });
         }
 
-        function optimizeContent(content) {
+        function optimizeContent(content, retryCount) {
+            retryCount = retryCount || 0;
+            const maxRetries = 2;
+            
             showLoading();
-            $('gwa-info-box').hide();
+            
             $.ajax({
                 url: pixaAiData.ajaxUrl,
                 type: 'POST',
@@ -277,18 +317,26 @@
                 },
                 success: function(response) {
                     hideLoading();
-                    $('gwa-info-box').show();
 
                     if (response.success) {
                         showResult(response.data.content, 'Optimized Content');
                     } else {
                         const errorMsg = response.data && response.data.message ? response.data.message : 'An error occurred';
-                        showError(errorMsg);
+                        
+                        // Check if it's a retryable error
+                        if (retryCount < maxRetries && errorMsg.includes('overloaded')) {
+                            const delay = Math.pow(2, retryCount) * 1000;
+                            showRetryMessage('API is busy. Retrying in ' + (delay/1000) + ' seconds...');
+                            setTimeout(function() {
+                                optimizeContent(content, retryCount + 1);
+                            }, delay);
+                        } else {
+                            showError(errorMsg);
+                        }
                     }
                 },
                 error: function(xhr, status, error) {
                     hideLoading();
-                    $('gwa-info-box').show();
                     showError('Network error: ' + error);
                 }
             });
@@ -373,6 +421,14 @@
             setTimeout(function() {
                 $('#gwa-error').fadeOut();
             }, 5000);
+        }
+
+        function showRetryMessage(message) {
+            $('#gwa-error').html('<strong>⏳ Retrying:</strong> ' + message)
+                .css('background', '#fff3cd')
+                .css('color', '#856404')
+                .css('border-left-color', '#ffc107')
+                .show();
         }
 
         function resetModal() {

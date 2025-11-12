@@ -3,7 +3,7 @@
  * Plugin Name: Pixa AI Assistant
  * Plugin URI: https://javapixa.com
  * Description: AI-powered writing assistant using Google Gemini to generate content and optimize articles for SEO
- * Version: 2.0.2
+ * Version: 2.2.0
  * Author: Javapixa Creative Studio
  * License: GPL v2 or later
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('PIXA_AI_VERSION', '2.0.2');
+define('PIXA_AI_VERSION', '2.2.0');
 define('PIXA_AI_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('PIXA_AI_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -166,6 +166,7 @@ class Pixa_AI_Assistant {
 
         $prompt = isset($_POST['prompt']) ? sanitize_textarea_field($_POST['prompt']) : '';
         $tone = isset($_POST['tone']) ? sanitize_text_field($_POST['tone']) : 'professional';
+        $language = isset($_POST['language']) ? sanitize_text_field($_POST['language']) : 'indonesian';
 
         // Validate prompt
         if (empty($prompt)) {
@@ -185,7 +186,7 @@ class Pixa_AI_Assistant {
             return;
         }
 
-        $content = $this->generate_content_with_gemini($api_key, $prompt, $tone);
+        $content = $this->generate_content_with_gemini($api_key, $prompt, $tone, $language);
 
         if (is_wp_error($content)) {
             $this->log_error('Generate Content Error', $content->get_error_message());
@@ -291,17 +292,24 @@ class Pixa_AI_Assistant {
         wp_send_json_success(array('content' => $optimized_content));
     }
 
-    private function generate_content_with_gemini($api_key, $prompt, $tone = 'professional') {
+    private function generate_content_with_gemini($api_key, $prompt, $tone = 'professional', $language = 'indonesian') {
         $model = get_option($this->model_option_name, 'gemini-2.5-flash');
         $url = 'https://generativelanguage.googleapis.com/v1/models/' . $model . ':generateContent';
 
+        // Language instruction
+        $language_map = array(
+            'indonesian' => 'Write in Indonesian (Bahasa Indonesia). ',
+            'english' => 'Write in English. '
+        );
+        $language_instruction = isset($language_map[$language]) ? $language_map[$language] : $language_map['indonesian'];
+        
         $tone_instruction = "Write in a {$tone} tone. ";
 
         $body = json_encode(array(
             'contents' => array(
                 array(
                     'parts' => array(
-                        array('text' => $tone_instruction . 'Write a blog post about: ' . $prompt . '\n\nIMPORTANT: Format the output in HTML with proper tags like <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em> etc. Do not use markdown. Return only the HTML content without any code blocks or backticks.')
+                        array('text' => $language_instruction . $tone_instruction . 'Write a blog post about: ' . $prompt . '\n\nIMPORTANT: Format the output in HTML with proper tags like <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em> etc. Do not use markdown. Return only the HTML content without any code blocks or backticks.')
                     )
                 )
             )
