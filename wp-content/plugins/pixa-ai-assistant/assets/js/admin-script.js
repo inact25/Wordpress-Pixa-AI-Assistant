@@ -2,8 +2,14 @@
     'use strict';
 
     $(document).ready(function() {
-        if (!gwaData.hasApiKey) {
-            console.warn('Gemini API key not configured');
+        // Check if pixaAiData is defined
+        if (typeof pixaAiData === 'undefined') {
+            console.error('Pixa AI: Configuration not loaded');
+            return;
+        }
+
+        if (!pixaAiData.hasApiKey) {
+            console.warn('Pixa AI: API key not configured');
         }
 
         const floatingButton = `
@@ -136,12 +142,12 @@
             const tone = $('#gwa-tone').val();
 
             if (!prompt) {
-                showError('Please enter a description of what you want to write about.');
+                showError(pixaAiData.strings.error_prompt_required);
                 return;
             }
 
-            if (!gwaData.hasApiKey) {
-                showError('API key not configured. Please add your Gemini API key in Settings > Pixa AI');
+            if (!pixaAiData.hasApiKey) {
+                showError(pixaAiData.strings.error_api_key);
                 return;
             }
 
@@ -149,15 +155,20 @@
         });
 
         $('#gwa-analyze-btn').on('click', function() {
-            if (!gwaData.hasApiKey) {
-                showError('API key not configured. Please add your Gemini API key in Settings > Pixa AI');
+            if (!pixaAiData.hasApiKey) {
+                showError(pixaAiData.strings.error_api_key);
                 return;
             }
 
             const content = getEditorContent();
 
             if (!content) {
-                showError('No content found in the editor. Please write something first.');
+                showError(pixaAiData.strings.error_no_content);
+                return;
+            }
+            
+            if (content.length > pixaAiData.maxContentLength) {
+                showError(pixaAiData.strings.error_content_too_long);
                 return;
             }
 
@@ -165,15 +176,20 @@
         });
 
         $('#gwa-optimize-btn').on('click', function() {
-            if (!gwaData.hasApiKey) {
-                showError('API key not configured. Please add your Gemini API key in Settings > Pixa AI');
+            if (!pixaAiData.hasApiKey) {
+                showError(pixaAiData.strings.error_api_key);
                 return;
             }
 
             const content = getEditorContent();
 
             if (!content) {
-                showError('No content found in the editor. Please write something first.');
+                showError(pixaAiData.strings.error_no_content);
+                return;
+            }
+            
+            if (content.length > pixaAiData.maxContentLength) {
+                showError(pixaAiData.strings.error_content_too_long);
                 return;
             }
 
@@ -191,11 +207,11 @@
             showLoading();
 
             $.ajax({
-                url: gwaData.ajaxUrl,
+                url: pixaAiData.ajaxUrl,
                 type: 'POST',
                 data: {
                     action: 'gwa_generate_content',
-                    nonce: gwaData.nonce,
+                    nonce: pixaAiData.nonce,
                     prompt: prompt,
                     tone: tone
                 },
@@ -205,7 +221,8 @@
                     if (response.success) {
                         showResult(response.data.content);
                     } else {
-                        showError(response.data || 'An error occurred');
+                        const errorMsg = response.data && response.data.message ? response.data.message : 'An error occurred';
+                        showError(errorMsg);
                     }
                 },
                 error: function(xhr, status, error) {
@@ -219,11 +236,11 @@
             showLoading();
 
             $.ajax({
-                url: gwaData.ajaxUrl,
+                url: pixaAiData.ajaxUrl,
                 type: 'POST',
                 data: {
                     action: 'gwa_analyze_content',
-                    nonce: gwaData.nonce,
+                    nonce: pixaAiData.nonce,
                     content: content
                 },
                 success: function(response) {
@@ -232,7 +249,8 @@
                     if (response.success) {
                         showAnalysisResult(response.data.analysis);
                     } else {
-                        showError(response.data || 'An error occurred');
+                        const errorMsg = response.data && response.data.message ? response.data.message : 'An error occurred';
+                        showError(errorMsg);
                     }
                 },
                 error: function(xhr, status, error) {
@@ -246,11 +264,11 @@
             showLoading();
 
             $.ajax({
-                url: gwaData.ajaxUrl,
+                url: pixaAiData.ajaxUrl,
                 type: 'POST',
                 data: {
                     action: 'gwa_optimize_seo',
-                    nonce: gwaData.nonce,
+                    nonce: pixaAiData.nonce,
                     content: content
                 },
                 success: function(response) {
@@ -259,7 +277,8 @@
                     if (response.success) {
                         showResult(response.data.content);
                     } else {
-                        showError(response.data || 'An error occurred');
+                        const errorMsg = response.data && response.data.message ? response.data.message : 'An error occurred';
+                        showError(errorMsg);
                     }
                 },
                 error: function(xhr, status, error) {
