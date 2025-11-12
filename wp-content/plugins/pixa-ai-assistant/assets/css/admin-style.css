@@ -1,0 +1,335 @@
+.gwa-floating-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #dc143c 0%, #a0102d 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    z-index: 9998;
+}
+
+.gwa-floating-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(220, 20, 60, 0.4);
+}
+
+.gwa-modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+}
+
+.gwa-modal-content {
+    position: relative;
+    background-color: #fff;
+    margin: 5% auto;
+    padding: 0;
+    width: 90%;
+    max-width: 700px;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.gwa-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    background: #101726;
+    border-radius: 12px 12px 0 0;
+    color: white;
+}
+
+.gwa-modal-header h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+.gwa-close {
+    color: white;
+    font-size: 32px;
+    font-weight: 300;
+    cursor: pointer;
+    line-height: 1;
+    transition: opacity 0.2s;
+}
+
+.gwa-close:hover {
+    opacity: 0.7;
+}
+
+.gwa-modal-body {
+    padding: 25px;
+}
+
+.gwa-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.gwa-tab-btn {
+    background: none;
+    border: none;
+    padding: 12px 20px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #64748b;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    margin-bottom: -2px;
+}
+
+.gwa-tab-btn:hover {
+    color: #dc143c;
+}
+
+.gwa-tab-btn.active {
+    color: #dc143c;
+    border-bottom-color: #dc143c;
+}
+
+.gwa-tab-content {
+    display: none;
+}
+
+.gwa-tab-content.active {
+    display: block;
+}
+
+.gwa-tab-content p {
+    margin-bottom: 12px;
+    color: #475569;
+    font-size: 14px;
+}
+
+.gwa-info-box {
+    background: #f0f4ff;
+    border-left: 4px solid #3d81f5;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.gwa-info-box p {
+    margin-bottom: 10px;
+    color: #1e3a5f;
+}
+
+.gwa-info-box p:last-child {
+    margin-bottom: 0;
+}
+
+.gwa-info-box strong {
+    font-size: 16px;
+    color: #101726;
+}
+
+.gwa-info-box ul {
+    margin: 10px 0 0 20px;
+    padding: 0;
+}
+
+.gwa-info-box li {
+    color: #1e3a5f;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+
+.gwa-form-group {
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.gwa-form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #475569;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.gwa-select {
+    width: 100%;
+    max-width: 100% !important;
+    padding: 10px 12px !important;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px !important;
+    font-size: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: white;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.gwa-select:focus {
+    outline: none;
+    border-color: #3d81f5;
+}
+
+#gwa-prompt {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    resize: vertical;
+    transition: border-color 0.2s;
+}
+
+#gwa-prompt:focus {
+    outline: none;
+    border-color: #3d81f5;
+}
+
+.gwa-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.gwa-btn-primary {
+    background: linear-gradient(135deg, #dc143c 0%, #a0102d 100%);
+    color: white;
+}
+
+.gwa-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 20, 60, 0.4);
+}
+
+.gwa-btn-success {
+    background: #3d81f5;
+    color: white;
+}
+
+.gwa-btn-success:hover {
+    background: #2868d8;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(61, 129, 245, 0.4);
+}
+
+.gwa-loading {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.gwa-spinner {
+    border: 4px solid #f3f4f6;
+    border-top: 4px solid #dc143c;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.gwa-loading p {
+    color: #64748b;
+    font-size: 14px;
+}
+
+.gwa-result {
+    margin-top: 20px;
+}
+
+.gwa-result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.gwa-result-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #1e293b;
+}
+
+#gwa-result-content {
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    max-height: 400px;
+    overflow-y: auto;
+    line-height: 1.6;
+    color: #334155;
+    font-size: 14px;
+}
+
+.gwa-error {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border-left: 4px solid #dc2626;
+    margin-top: 15px;
+    font-size: 14px;
+}
+
+.gwa-error strong {
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .gwa-modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+
+    .gwa-floating-btn {
+        bottom: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+    }
+
+    .gwa-tabs {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .gwa-tab-btn {
+        width: 100%;
+        text-align: left;
+    }
+}
