@@ -24,6 +24,7 @@
                     <div class="gwa-modal-body">
                         <div class="gwa-tabs">
                             <button class="gwa-tab-btn active" data-tab="generate">Generate Content</button>
+                            <button class="gwa-tab-btn" data-tab="analyze">Analyze Article</button>
                             <button class="gwa-tab-btn" data-tab="optimize">Optimize for SEO</button>
                         </div>
                         
@@ -46,6 +47,21 @@
                                 <textarea id="gwa-prompt" rows="5" placeholder="Example: Write about the benefits of WordPress plugins for small businesses..."></textarea>
                             </div>
                             <button id="gwa-generate-btn" class="gwa-btn gwa-btn-primary">Generate Content</button>
+                        </div>
+                        
+                        <div id="gwa-analyze-tab" class="gwa-tab-content">
+                            <div class="gwa-info-box">
+                                <p><strong>Article Analysis</strong></p>
+                                <p>Get AI-powered insights about your current article. The analysis will include:</p>
+                                <ul style="list-style-type: disc;">
+                                    <li>Overall quality assessment</li>
+                                    <li>Recommendations for improvement</li>
+                                    <li>Missing elements or topics</li>
+                                    <li>Content structure suggestions</li>
+                                    <li>SEO and readability feedback</li>
+                                </ul>
+                            </div>
+                            <button id="gwa-analyze-btn" class="gwa-btn gwa-btn-primary">Analyze Current Article</button>
                         </div>
                         
                         <div id="gwa-optimize-tab" class="gwa-tab-content">
@@ -129,6 +145,22 @@
             generateContent(prompt, tone);
         });
 
+        $('#gwa-analyze-btn').on('click', function() {
+            if (!gwaData.hasApiKey) {
+                showError('API key not configured. Please add your Gemini API key in Settings > Pixa AI');
+                return;
+            }
+
+            const content = getEditorContent();
+
+            if (!content) {
+                showError('No content found in the editor. Please write something first.');
+                return;
+            }
+
+            analyzeContent(content);
+        });
+
         $('#gwa-optimize-btn').on('click', function() {
             if (!gwaData.hasApiKey) {
                 showError('API key not configured. Please add your Gemini API key in Settings > Pixa AI');
@@ -169,6 +201,33 @@
 
                     if (response.success) {
                         showResult(response.data.content);
+                    } else {
+                        showError(response.data || 'An error occurred');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    hideLoading();
+                    showError('Network error: ' + error);
+                }
+            });
+        }
+
+        function analyzeContent(content) {
+            showLoading();
+
+            $.ajax({
+                url: gwaData.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'gwa_analyze_content',
+                    nonce: gwaData.nonce,
+                    content: content
+                },
+                success: function(response) {
+                    hideLoading();
+
+                    if (response.success) {
+                        showAnalysisResult(response.data.analysis);
                     } else {
                         showError(response.data || 'An error occurred');
                     }
@@ -251,7 +310,24 @@
                 formattedContent = formattedContent.replace(/^```\n?/, '').replace(/```$/, '').trim();
             }
 
+            $('#gwa-result-header h3').text('Generated Content');
+            $('#gwa-insert-btn').show();
             $('#gwa-result-content').html(formattedContent);
+            $('#gwa-result').show();
+        }
+
+        function showAnalysisResult(analysis) {
+            let formattedAnalysis = analysis.trim();
+
+            if (formattedAnalysis.startsWith('```html')) {
+                formattedAnalysis = formattedAnalysis.replace(/^```html\n?/, '').replace(/```$/, '').trim();
+            } else if (formattedAnalysis.startsWith('```')) {
+                formattedAnalysis = formattedAnalysis.replace(/^```\n?/, '').replace(/```$/, '').trim();
+            }
+
+            $('#gwa-result-header h3').text('Article Analysis');
+            $('#gwa-insert-btn').hide();
+            $('#gwa-result-content').html(formattedAnalysis);
             $('#gwa-result').show();
         }
 

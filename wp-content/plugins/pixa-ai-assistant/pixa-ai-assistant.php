@@ -25,6 +25,7 @@ class Gemini_Writing_Assistant {
         add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
         add_action('wp_ajax_gwa_generate_content', array($this, 'ajax_generate_content'));
+        add_action('wp_ajax_gwa_analyze_content', array($this, 'ajax_analyze_content'));
         add_action('wp_ajax_gwa_optimize_seo', array($this, 'ajax_optimize_seo'));
     }
 
@@ -129,8 +130,8 @@ class Gemini_Writing_Assistant {
             return;
         }
 
-        wp_enqueue_style('gwa-admin-style', GWA_PLUGIN_URL . 'assets/css/admin-style.css', array(), '1.0.6');
-        wp_enqueue_script('gwa-admin-script', GWA_PLUGIN_URL . 'assets/js/admin-script.js', array('jquery'), '1.0.6', true);
+        wp_enqueue_style('gwa-admin-style', GWA_PLUGIN_URL . 'assets/css/admin-style.css', array(), '1.1.0');
+        wp_enqueue_script('gwa-admin-script', GWA_PLUGIN_URL . 'assets/js/admin-script.js', array('jquery'), '1.1.0', true);
 
         wp_localize_script('gwa-admin-script', 'gwaData', array(
             'ajaxUrl' => admin_url('admin-ajax.php'),
@@ -166,6 +167,34 @@ class Gemini_Writing_Assistant {
         }
 
         wp_send_json_success(array('content' => $content));
+    }
+
+    public function ajax_analyze_content() {
+        check_ajax_referer('gwa_nonce', 'nonce');
+
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error('Insufficient permissions');
+        }
+
+        $content = isset($_POST['content']) ? wp_kses_post($_POST['content']) : '';
+
+        if (empty($content)) {
+            wp_send_json_error('Content is required');
+        }
+
+        $api_key = get_option($this->option_name);
+
+        if (empty($api_key)) {
+            wp_send_json_error('API key not configured');
+        }
+
+        $analysis = $this->analyze_content_with_gemini($api_key, $content);
+
+        if (is_wp_error($analysis)) {
+            wp_send_json_error($analysis->get_error_message());
+        }
+
+        wp_send_json_success(array('analysis' => $analysis));
     }
 
     public function ajax_optimize_seo() {
@@ -207,6 +236,50 @@ class Gemini_Writing_Assistant {
                 array(
                     'parts' => array(
                         array('text' => $tone_instruction . 'Write a blog post about: ' . $prompt . '\n\nIMPORTANT: Format the output in HTML with proper tags like <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em> etc. Do not use markdown. Return only the HTML content without any code blocks or backticks.')
+                    )
+                )
+            )
+        ));
+
+        $response = wp_remote_post($url, array(
+            'headers' => array(
+                'Content-Type' => 'application/json'
+            ),
+            'body' => $body,
+            'timeout' => 30
+        ));
+
+        if (is_wp_error($response)) {
+            return $response;
+        }
+
+        $response_code = wp_remote_retrieve_response_code($response);
+        $response_body = wp_remote_retrieve_body($response);
+
+        if ($response_code !== 200) {
+            return new WP_Error('api_error', 'Gemini API error: ' . $response_body);
+        }
+
+        $data = json_decode($response_body, true);
+
+        if (isset($data['candidates'][0]['content']['parts'][0]['text'])) {
+            return $data['candidates'][0]['content']['parts'][0]['text'];
+        }
+
+        return new WP_Error('parse_error', 'Unable to parse API response');
+    }
+
+    private function analyze_content_with_gemini($api_key, $content) {
+        $model = get_option($this->model_option_name, 'gemini-2.5-flash');
+        $url = 'https://generativelanguage.googleapis.com/v1/models/' . $model . ':generateContent?key=' . $api_key;
+
+        $prompt = "Analyze the following article and provide a comprehensive analysis including:\n\n1. Overall Quality Assessment: Rate the article's overall quality and effectiveness\n2. Strengths: What the article does well\n3. Areas for Improvement: Specific recommendations to enhance the content\n4. Missing Elements: Important topics or information that should be added\n5. SEO & Readability: Analysis of SEO optimization and readability\n6. Structure & Organization: Feedback on content flow and organization\n7. Target Audience: Whether it effectively reaches its intended audience\n\nIMPORTANT: Format the output in HTML with proper tags like <h3>, <h4>, <p>, <ul>, <li>, <strong>, <em> etc. Do not use markdown. Return only the HTML content without any code blocks or backticks.\n\nArticle to analyze:\n\n" . $content;
+
+        $body = json_encode(array(
+            'contents' => array(
+                array(
+                    'parts' => array(
+                        array('text' => $prompt)
                     )
                 )
             )
