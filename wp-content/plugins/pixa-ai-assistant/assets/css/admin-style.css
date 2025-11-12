@@ -20,6 +20,19 @@
     box-shadow: 0 6px 20px rgba(220, 20, 60, 0.4);
 }
 
+.gwa-floating-icon {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+    transform: rotate(-45deg);
+    transition: transform 0.6s ease;
+}
+
+.gwa-floating-btn:hover .gwa-floating-icon {
+    transform: rotate(360deg);
+}
+
 .gwa-modal {
     display: none;
     position: fixed;

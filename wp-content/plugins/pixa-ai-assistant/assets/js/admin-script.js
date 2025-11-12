@@ -14,9 +14,7 @@
 
         const floatingButton = `
             <div id="gwa-floating-button" class="gwa-floating-btn">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="white"/>
-                </svg>
+                <img src="https://www.javapixa.com/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Flogo_symbol.d3d80f6b.png&w=256&q=75" alt="Pixa AI" class="gwa-floating-icon" />
             </div>
         `;
 
