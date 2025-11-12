@@ -102,6 +102,7 @@
 
         $('#gwa-floating-button').on('click', function() {
             $('#gwa-modal').fadeIn(200);
+            $('.gwa-tab-content.active').show();
         });
 
         $('.gwa-close').on('click', function() {
@@ -125,7 +126,9 @@
             $('.gwa-tab-content').removeClass('active');
             $('#gwa-' + tab + '-tab').addClass('active');
 
-            resetModal();
+            $('#gwa-result').hide();
+            $('#gwa-error').hide();
+            $('#gwa-loading').hide();
         });
 
         $('#gwa-generate-btn').on('click', function() {
@@ -299,6 +302,7 @@
 
         function hideLoading() {
             $('#gwa-loading').hide();
+            $('.gwa-tab-content.active').show();
         }
 
         function showResult(content) {
@@ -314,6 +318,7 @@
             $('#gwa-insert-btn').show();
             $('#gwa-result-content').html(formattedContent);
             $('#gwa-result').show();
+            $('.gwa-tab-content.active').show();
         }
 
         function showAnalysisResult(analysis) {
@@ -329,10 +334,12 @@
             $('#gwa-insert-btn').hide();
             $('#gwa-result-content').html(formattedAnalysis);
             $('#gwa-result').show();
+            $('.gwa-tab-content.active').show();
         }
 
         function showError(message) {
             $('#gwa-error').html('<strong>Error:</strong> ' + message).show();
+            $('.gwa-tab-content.active').show();
             setTimeout(function() {
                 $('#gwa-error').fadeOut();
             }, 5000);

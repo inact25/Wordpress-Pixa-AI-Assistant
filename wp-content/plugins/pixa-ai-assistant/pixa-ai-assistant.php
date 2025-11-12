@@ -130,8 +130,8 @@ class Gemini_Writing_Assistant {
             return;
         }
 
-        wp_enqueue_style('gwa-admin-style', GWA_PLUGIN_URL . 'assets/css/admin-style.css', array(), '1.1.0');
-        wp_enqueue_script('gwa-admin-script', GWA_PLUGIN_URL . 'assets/js/admin-script.js', array('jquery'), '1.1.0', true);
+        wp_enqueue_style('gwa-admin-style', GWA_PLUGIN_URL . 'assets/css/admin-style.css', array(), '1.1.2');
+        wp_enqueue_script('gwa-admin-script', GWA_PLUGIN_URL . 'assets/js/admin-script.js', array('jquery'), '1.1.2', true);
 
         wp_localize_script('gwa-admin-script', 'gwaData', array(
             'ajaxUrl' => admin_url('admin-ajax.php'),
