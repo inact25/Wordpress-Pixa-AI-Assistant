@@ -3,7 +3,7 @@
  * Plugin Name: Pixa AI Assistant
  * Plugin URI: https://javapixa.com
  * Description: AI-powered writing assistant using Google Gemini to generate content and optimize articles for SEO
- * Version: 2.3.1
+ * Version: 2.4.0
  * Author: Javapixa Creative Studio
  * License: GPL v2 or later
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('PIXA_AI_VERSION', '2.3.1');
+define('PIXA_AI_VERSION', '2.4.0');
 define('PIXA_AI_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('PIXA_AI_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -158,16 +158,48 @@ class Pixa_AI_Assistant {
                         </div>
                     </div>
 
-                    <?php if ($total_requests > 0): ?>
-                    <div class="pixa-ai-chart-container" style="margin-top: 20px;width: 100%;">
-                        <h3>Request Distribution</h3>
-                        <canvas id="pixaUsageChart" width="400" height="200"></canvas>
+                    <?php if ($total_requests > 0):
+                        // Calculate daily usage for the last 7 days
+                        $daily_usage = array();
+                        for ($i = 6; $i >= 0; $i--) {
+                            $date = date('Y-m-d', strtotime("-$i days"));
+                            $daily_usage[$date] = 0;
+                        }
+
+                        // Get all usage logs
+                        foreach ($users as $user_id) {
+                            $usage_log = get_user_meta($user_id, 'pixa_ai_usage_log_' . $user_id, true);
+                            if (is_array($usage_log)) {
+                                foreach ($usage_log as $log_entry) {
+                                    if (isset($log_entry['date'])) {
+                                        $log_date = date('Y-m-d', strtotime($log_entry['date']));
+                                        if (isset($daily_usage[$log_date])) {
+                                            $daily_usage[$log_date]++;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        $usage_dates = array_keys($daily_usage);
+                        $usage_counts = array_values($daily_usage);
+                    ?>
+                    <div class="pixa-ai-charts-grid">
+                        <div class="pixa-ai-chart-container">
+                            <h3>Request Distribution</h3>
+                            <canvas id="pixaUsageChart" width="400" height="250"></canvas>
+                        </div>
+                        <div class="pixa-ai-chart-container">
+                            <h3>Daily Usage Trend (Last 7 Days)</h3>
+                            <canvas id="pixaDailyChart" width="400" height="250"></canvas>
+                        </div>
                     </div>
                     <script>
                     document.addEventListener('DOMContentLoaded', function() {
-                        const ctx = document.getElementById('pixaUsageChart');
-                        if (ctx) {
-                            new Chart(ctx, {
+                        // Doughnut Chart - Request Distribution
+                        const ctx1 = document.getElementById('pixaUsageChart');
+                        if (ctx1) {
+                            new Chart(ctx1, {
                                 type: 'doughnut',
                                 data: {
                                     labels: ['Content Generation', 'Article Analysis', 'SEO Optimization'],
@@ -188,18 +220,68 @@ class Pixa_AI_Assistant {
                                 }
                             });
                         }
+
+                        // Line Chart - Daily Usage Trend
+                        const ctx2 = document.getElementById('pixaDailyChart');
+                        if (ctx2) {
+                            new Chart(ctx2, {
+                                type: 'line',
+                                data: {
+                                    labels: [<?php echo '"' . implode('","', array_map(function($date) { return date('M d', strtotime($date)); }, $usage_dates)) . '"'; ?>],
+                                    datasets: [{
+                                        label: 'Requests',
+                                        data: [<?php echo implode(',', $usage_counts); ?>],
+                                        borderColor: '#dc143c',
+                                        backgroundColor: 'rgba(220, 20, 60, 0.1)',
+                                        tension: 0.4,
+                                        fill: true,
+                                        borderWidth: 2,
+                                        pointRadius: 4,
+                                        pointBackgroundColor: '#dc143c',
+                                        pointBorderColor: '#fff',
+                                        pointBorderWidth: 2,
+                                        pointHoverRadius: 6
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: {
+                                        legend: {
+                                            display: false
+                                        }
+                                    },
+                                    scales: {
+                                        y: {
+                                            beginAtZero: true,
+                                            ticks: {
+                                                stepSize: 1
+                                            },
+                                            grid: {
+                                                color: 'rgba(0, 0, 0, 0.05)'
+                                            }
+                                        },
+                                        x: {
+                                            grid: {
+                                                display: false
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        }
                     });
                     </script>
                     <?php endif; ?>
 
                     <div class="pixa-ai-info-box">
-                        <p><strong>👥 Active Users:</strong> <?php echo $user_count; ?> user(s) have used the AI assistant</p>
+                        <p><strong>Active Users:</strong> <?php echo $user_count; ?> user(s) have used the AI assistant</p>
                     </div>
                 </div>
 
                 <!-- Settings Form -->
                 <div class="pixa-ai-section pixa-ai-settings-form">
-                    <h2>⚙️ Configuration</h2>
+                    <h2>Configuration</h2>
                     <form action="options.php" method="post" class="pixa-ai-form">
                         <?php settings_fields('gwa_settings'); ?>
 
@@ -697,6 +779,28 @@ class Pixa_AI_Assistant {
         }
 
         update_user_meta($user_id, $usage_key, $usage);
+
+        // Also store usage log with timestamp for charts
+        $log_key = 'pixa_ai_usage_log_' . $user_id;
+        $usage_log = get_user_meta($user_id, $log_key, true);
+
+        if (!is_array($usage_log)) {
+            $usage_log = array();
+        }
+
+        $usage_log[] = array(
+            'type' => $type,
+            'date' => current_time('mysql'),
+            'timestamp' => time()
+        );
+
+        // Keep only last 30 days of logs
+        $thirty_days_ago = strtotime('-30 days');
+        $usage_log = array_filter($usage_log, function($log) use ($thirty_days_ago) {
+            return isset($log['timestamp']) && $log['timestamp'] >= $thirty_days_ago;
+        });
+
+        update_user_meta($user_id, $log_key, $usage_log);
     }
 
     /**
