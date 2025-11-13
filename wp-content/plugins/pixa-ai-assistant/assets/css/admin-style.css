@@ -48,13 +48,16 @@
 .gwa-modal-content {
     position: relative;
     background-color: #fff;
-    margin: 5% auto;
+    margin: 3% auto;
     padding: 0;
     width: 90%;
     max-width: 700px;
+    max-height: 90vh;
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
     animation: slideDown 0.3s ease;
+    display: flex;
+    flex-direction: column;
 }
 
 @keyframes slideDown {
@@ -99,6 +102,27 @@
 
 .gwa-modal-body {
     padding: 25px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+.gwa-modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.gwa-modal-body::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.gwa-modal-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.gwa-modal-body::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
 
 .gwa-tabs {
@@ -128,6 +152,24 @@
 .gwa-tab-btn.active {
     color: #dc143c;
     border-bottom-color: #dc143c;
+}
+
+.gwa-premium-icon {
+    margin-left: 6px;
+    vertical-align: middle;
+    color: #FFD700;
+    filter: drop-shadow(0 1px 2px rgba(255, 215, 0, 0.5));
+    transition: all 0.2s ease;
+}
+
+.gwa-tab-btn:hover .gwa-premium-icon {
+    color: #FFC700;
+    filter: drop-shadow(0 2px 4px rgba(255, 215, 0, 0.7));
+    transform: scale(1.1);
+}
+
+.gwa-tab-btn.active .gwa-premium-icon {
+    color: #FFD700;
 }
 
 .gwa-tab-content {
@@ -355,10 +397,124 @@
     word-break: break-word;
 }
 
+/* Image sub-tabs */
+.gwa-image-subtabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.gwa-image-subtab-btn {
+    background: none;
+    border: none;
+    padding: 12px 18px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #64748b;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    margin-bottom: -2px;
+    flex: 1;
+    text-align: center;
+}
+
+.gwa-image-subtab-btn:hover {
+    color: #9b59b6;
+}
+
+.gwa-image-subtab-btn.active {
+    color: #9b59b6;
+    border-bottom-color: #9b59b6;
+}
+
+.gwa-image-subtab-content {
+    display: none;
+}
+
+.gwa-image-subtab-content.active {
+    display: block;
+}
+
+/* Image editor layout */
+.gwa-editor-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+/* Edit prompt styling */
+#gwa-edit-prompt {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    resize: vertical;
+    transition: all 0.3s ease;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+#gwa-edit-prompt:focus {
+    outline: none;
+    border-color: #9b59b6;
+    box-shadow: 0 0 0 3px rgba(155, 89, 182, 0.1);
+}
+
+#gwa-edit-prompt::placeholder {
+    color: #94a3b8;
+}
+
+.gwa-editor-column h4 {
+    margin: 0 0 12px 0;
+    font-size: 15px;
+    color: #1e293b;
+    font-weight: 600;
+}
+
+.gwa-upload-area {
+    background: #f8fafc;
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    min-height: 180px;
+    max-height: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+}
+
+.gwa-result-area {
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 20px;
+    min-height: 180px;
+    max-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+}
+
+.gwa-result-area img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
 @media (max-width: 768px) {
     .gwa-modal-content {
         width: 95%;
-        margin: 10% auto;
+        margin: 2% auto;
+        max-height: 95vh;
     }
 
     .gwa-floating-btn {
@@ -385,5 +541,19 @@
 
     .gwa-form-group-half {
         margin-bottom: 20px;
+    }
+
+    .gwa-editor-columns {
+        grid-template-columns: 1fr;
+    }
+
+    .gwa-image-subtabs {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .gwa-image-subtab-btn {
+        width: 100%;
+        text-align: left;
     }
 }

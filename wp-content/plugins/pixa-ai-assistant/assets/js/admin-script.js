@@ -27,9 +27,14 @@
                     </div>
                     <div class="gwa-modal-body">
                         <div class="gwa-tabs">
-                            <button class="gwa-tab-btn active" data-tab="generate">Generate Content</button>
-                            <button class="gwa-tab-btn" data-tab="image">Generate Image</button>
-                            <button class="gwa-tab-btn" data-tab="analyze">Analyze Article</button>
+                            <button class="gwa-tab-btn active" data-tab="generate">Content</button>
+                            <button class="gwa-tab-btn" data-tab="image">
+                                Image
+                                <svg class="gwa-premium-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                                </svg>
+                            </button>
+                            <button class="gwa-tab-btn" data-tab="analyze">Analyze</button>
                             <button class="gwa-tab-btn" data-tab="optimize">Optimize for SEO</button>
                         </div>
                         
@@ -70,21 +75,58 @@
                                 <p style="margin: 8px 0 0 0; color: #856404;">To use the image generator, you need to configure your Gemini API key in <a href="options-general.php?page=gemini-writing-assistant" style="color: #856404; text-decoration: underline;">Settings > Pixa AI</a></p>
                             </div>
                             ` : ''}
-                            <div class="gwa-info-box">
-                                <p><strong>AI Image Generator (Nano Banana 🍌)</strong></p>
-                                <p>Create unique images using Gemini 2.5 Flash Image model. The generator will:</p>
-                                <ul style="list-style-type: disc;">
-                                    <li>Generate high-quality images with cinematic quality</li>
-                                    <li>Support detailed and creative prompts</li>
-                                    <li>Use advanced AI with temperature and creativity controls</li>
-                                    <li>Provide ready-to-use PNG images for your content</li>
-                                </ul>
+                            
+                            <!-- Sub-tabs for Generate and Editor -->
+                            <div class="gwa-image-subtabs">
+                                <button class="gwa-image-subtab-btn active" data-subtab="generate">Generator</button>
+                                <button class="gwa-image-subtab-btn" data-subtab="editor">Editor</button>
                             </div>
-                            <div class="gwa-form-group">
-                                <label for="gwa-image-prompt">Describe the image you want to generate:</label>
-                                <textarea id="gwa-image-prompt" rows="5" placeholder="Example: A beautiful sunset over mountains with vibrant orange and purple colors, photorealistic style..."></textarea>
+                            
+                            <!-- Generate Image Sub-tab -->
+                            <div id="gwa-image-generate-subtab" class="gwa-image-subtab-content active">
+                                <div class="gwa-info-box">
+                                    <p><strong>AI Image Generator (Nano Banana 🍌)</strong></p>
+                                    <p>Create unique images using Gemini 2.5 Flash Image model. The generator will:</p>
+                                    <ul style="list-style-type: disc;">
+                                        <li>Generate high-quality images with cinematic quality</li>
+                                        <li>Support detailed and creative prompts</li>
+                                        <li>Use advanced AI with temperature and creativity controls</li>
+                                        <li>Provide ready-to-use PNG images for your content</li>
+                                    </ul>
+                                </div>
+                                <div class="gwa-form-group">
+                                    <label for="gwa-image-prompt">Describe the image you want to generate:</label>
+                                    <textarea id="gwa-image-prompt" rows="5" placeholder="Example: A beautiful sunset over mountains with vibrant orange and purple colors, photorealistic style..."></textarea>
+                                </div>
+                                <button id="gwa-generate-image-btn" class="gwa-btn gwa-btn-primary">Generate Image</button>
                             </div>
-                            <button id="gwa-generate-image-btn" class="gwa-btn gwa-btn-primary">Generate Image</button>
+                            
+                            <!-- Edit Image Sub-tab -->
+                            <div id="gwa-image-editor-subtab" class="gwa-image-subtab-content">
+                          
+                                <div class="gwa-form-group">
+                                    <label for="gwa-edit-prompt">Describe how you want to edit the image:</label>
+                                    <textarea id="gwa-edit-prompt" rows="3" placeholder="Example: Make the sky more blue, add a rainbow, remove the person in the background..."></textarea>
+                                </div>
+                                <div class="gwa-editor-columns">
+                                    <div class="gwa-editor-column">
+                                        <h4>Original Image</h4>
+                                        <div id="gwa-image-upload-area" class="gwa-upload-area">
+                                            <button id="gwa-select-image-btn" class="gwa-btn gwa-btn-primary">Select from Media Library</button>
+                                            <div id="gwa-selected-image-preview" style="display: none; margin-top: 15px;">
+                                                <img id="gwa-selected-image" src="" alt="Selected Image" style="max-width: 100%; height: auto; border-radius: 8px;" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="gwa-editor-column">
+                                        <h4>Edited Result</h4>
+                                        <div id="gwa-edited-image-area" class="gwa-result-area">
+                                            <p style="text-align: center; color: #94a3b8; padding: 40px 20px;">Edited image will appear here</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button id="gwa-edit-image-btn" class="gwa-btn gwa-btn-primary" style="margin-top: 20px;" disabled>Edit Image</button>
+                            </div>
                         </div>
                         
                         <div id="gwa-analyze-tab" class="gwa-tab-content">
@@ -173,6 +215,22 @@
             $('#gwa-loading').hide();
         });
 
+        // Image sub-tabs handler
+        $(document).on('click', '.gwa-image-subtab-btn', function() {
+            const subtab = $(this).data('subtab');
+
+            $('.gwa-image-subtab-btn').removeClass('active');
+            $(this).addClass('active');
+
+            $('.gwa-image-subtab-content').removeClass('active').hide();
+            $('#gwa-image-' + subtab + '-subtab').addClass('active').show();
+
+            // Hide result, error, and loading panels when switching subtabs
+            $('#gwa-result').hide();
+            $('#gwa-error').hide();
+            $('#gwa-loading').hide();
+        });
+
         $('#gwa-generate-btn').on('click', function() {
             const prompt = $('#gwa-prompt').val().trim();
             const tone = $('#gwa-tone').val();
@@ -251,7 +309,7 @@
 
         $('#gwa-insert-btn').on('click', function() {
             const imageData = $('#gwa-result-content').data('imageData');
-            
+
             if (imageData) {
                 // Insert image
                 const imagePrompt = $('#gwa-result-content').data('imagePrompt') || 'AI Generated Image';
@@ -261,15 +319,79 @@
                 const content = $('#gwa-result-content').html();
                 insertToEditor(content);
             }
-            
+
             $('#gwa-modal').fadeOut(200);
             resetModal();
+        });
+
+        // Media library selector for image editing
+        let selectedImageUrl = '';
+        let selectedImageBase64 = '';
+        let mediaFrame;
+
+        $('#gwa-select-image-btn').on('click', function(e) {
+            e.preventDefault();
+
+            if (mediaFrame) {
+                mediaFrame.open();
+                return;
+            }
+
+            mediaFrame = wp.media({
+                title: 'Select Image to Edit',
+                button: {
+                    text: 'Select Image'
+                },
+                multiple: false,
+                library: {
+                    type: 'image'
+                }
+            });
+
+            mediaFrame.on('select', function() {
+                const attachment = mediaFrame.state().get('selection').first().toJSON();
+                selectedImageUrl = attachment.url;
+
+                // Show preview
+                $('#gwa-selected-image').attr('src', selectedImageUrl);
+                $('#gwa-selected-image-preview').show();
+
+                // Convert image to base64
+                imageUrlToBase64(selectedImageUrl, function(base64) {
+                    selectedImageBase64 = base64;
+                    $('#gwa-edit-image-btn').prop('disabled', false);
+                });
+            });
+
+            mediaFrame.open();
+        });
+
+        // Edit image button
+        $('#gwa-edit-image-btn').on('click', function() {
+            const prompt = $('#gwa-edit-prompt').val().trim();
+
+            if (!prompt) {
+                showError('Please describe how you want to edit the image.');
+                return;
+            }
+
+            if (!selectedImageBase64) {
+                showError('Please select an image from the media library first.');
+                return;
+            }
+
+            if (!pixaAiData.hasApiKey) {
+                showError(pixaAiData.strings.error_api_key);
+                return;
+            }
+
+            editImage(selectedImageBase64, prompt);
         });
 
         function generateContent(prompt, tone, language, retryCount) {
             retryCount = retryCount || 0;
             const maxRetries = 2;
-            
+
             showLoading();
 
             $.ajax({
@@ -289,7 +411,7 @@
                         showResult(response.data.content);
                     } else {
                         const errorMsg = response.data && response.data.message ? response.data.message : 'An error occurred';
-                        
+
                         // Check if it's a retryable error (503, overloaded)
                         if (retryCount < maxRetries && errorMsg.includes('overloaded')) {
                             const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s
@@ -312,7 +434,7 @@
         function generateImage(prompt, retryCount) {
             retryCount = retryCount || 0;
             const maxRetries = 2;
-            
+
             showLoading();
 
             $.ajax({
@@ -330,7 +452,7 @@
                         showImageResult(response.data.image, prompt);
                     } else {
                         const errorMsg = response.data && response.data.message ? response.data.message : 'An error occurred';
-                        
+
                         // Check if it's a retryable error
                         if (retryCount < maxRetries && errorMsg.includes('overloaded')) {
                             const delay = Math.pow(2, retryCount) * 1000;
@@ -353,7 +475,7 @@
         function analyzeContent(content, retryCount) {
             retryCount = retryCount || 0;
             const maxRetries = 2;
-            
+
             showLoading();
 
             $.ajax({
@@ -371,7 +493,7 @@
                         showAnalysisResult(response.data.analysis);
                     } else {
                         const errorMsg = response.data && response.data.message ? response.data.message : 'An error occurred';
-                        
+
                         // Check if it's a retryable error
                         if (retryCount < maxRetries && errorMsg.includes('overloaded')) {
                             const delay = Math.pow(2, retryCount) * 1000;
@@ -394,9 +516,9 @@
         function optimizeContent(content, retryCount) {
             retryCount = retryCount || 0;
             const maxRetries = 2;
-            
+
             showLoading();
-            
+
             $.ajax({
                 url: pixaAiData.ajaxUrl,
                 type: 'POST',
@@ -412,7 +534,7 @@
                         showResult(response.data.content, 'Optimized Content');
                     } else {
                         const errorMsg = response.data && response.data.message ? response.data.message : 'An error occurred';
-                        
+
                         // Check if it's a retryable error
                         if (retryCount < maxRetries && errorMsg.includes('overloaded')) {
                             const delay = Math.pow(2, retryCount) * 1000;
@@ -545,6 +667,90 @@
             $('#gwa-result').show();
         }
 
+        function showEditedImageResult(imageData, prompt) {
+            // Show in the editor column
+            const imageHtml = '<img src="' + imageData + '" alt="Edited Image" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />';
+            $('#gwa-edited-image-area').html(imageHtml);
+
+            // Also show in result panel
+            const resultHtml = '<div class="gwa-image-preview">' +
+                '<img src="' + imageData + '" alt="Edited Image" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />' +
+                '<p style="margin-top: 10px; color: #666; font-style: italic;">Edit: ' + prompt + '</p>' +
+                '</div>';
+
+            $('#gwa-result-header h3').text('Edited Image');
+            $('#gwa-insert-btn').text('Insert Edited Image to Editor').show();
+            $('#gwa-result-content').html(resultHtml);
+
+            // Store image data for insertion
+            $('#gwa-result-content').data('imageData', imageData);
+            $('#gwa-result-content').data('imagePrompt', 'Edited: ' + prompt);
+
+            // Hide all tab content forms and show result
+            $('.gwa-tab-content').hide();
+            $('.gwa-image-subtab-content').hide();
+            $('#gwa-result').show();
+        }
+
+        function editImage(imageBase64, prompt, retryCount) {
+            retryCount = retryCount || 0;
+            const maxRetries = 2;
+
+            showLoading();
+
+            $.ajax({
+                url: pixaAiData.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'gwa_edit_image',
+                    nonce: pixaAiData.nonce,
+                    image: imageBase64,
+                    prompt: prompt
+                },
+                success: function(response) {
+                    hideLoading();
+
+                    if (response.success) {
+                        showEditedImageResult(response.data.image, prompt);
+                    } else {
+                        const errorMsg = response.data && response.data.message ? response.data.message : 'An error occurred';
+
+                        if (retryCount < maxRetries && errorMsg.includes('overloaded')) {
+                            const delay = Math.pow(2, retryCount) * 1000;
+                            showRetryMessage('API is busy. Retrying in ' + (delay/1000) + ' seconds...');
+                            setTimeout(function() {
+                                editImage(imageBase64, prompt, retryCount + 1);
+                            }, delay);
+                        } else {
+                            showError(errorMsg);
+                            $('.gwa-image-subtab-content.active').show();
+                        }
+                    }
+                },
+                error: function(xhr, status, error) {
+                    hideLoading();
+                    showError('Network error: ' + error);
+                    $('.gwa-image-subtab-content.active').show();
+                }
+            });
+        }
+
+        function imageUrlToBase64(url, callback) {
+            const xhr = new XMLHttpRequest();
+            xhr.onload = function() {
+                const reader = new FileReader();
+                reader.onloadend = function() {
+                    // Remove data URL prefix to get just the base64 string
+                    const base64 = reader.result.split(',')[1];
+                    callback(base64);
+                };
+                reader.readAsDataURL(xhr.response);
+            };
+            xhr.open('GET', url);
+            xhr.responseType = 'blob';
+            xhr.send();
+        }
+
         function showError(message) {
             $('#gwa-error').html('<strong>Error:</strong> ' + message).show();
             // Show the active tab when error occurs
@@ -565,11 +771,20 @@
         function resetModal() {
             $('#gwa-prompt').val('');
             $('#gwa-image-prompt').val('');
+            $('#gwa-edit-prompt').val('');
             $('#gwa-result').hide();
             $('#gwa-error').hide();
             $('#gwa-loading').hide();
             $('#gwa-result-content').removeData('imageData').removeData('imagePrompt');
             $('#gwa-insert-btn').text('Insert to Editor');
+
+            // Reset image editor
+            $('#gwa-selected-image-preview').hide();
+            $('#gwa-selected-image').attr('src', '');
+            $('#gwa-edited-image-area').html('<p style="text-align: center; color: #94a3b8; padding: 40px 20px;">Edited image will appear here</p>');
+            $('#gwa-edit-image-btn').prop('disabled', true);
+            selectedImageUrl = '';
+            selectedImageBase64 = '';
         }
     });
 
