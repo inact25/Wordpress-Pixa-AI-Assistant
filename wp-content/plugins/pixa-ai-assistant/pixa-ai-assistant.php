@@ -33,6 +33,7 @@ class Pixa_AI_Assistant {
         add_action('wp_ajax_gwa_optimize_seo', array($this, 'ajax_optimize_seo'));
         add_action('wp_ajax_gwa_generate_image', array($this, 'ajax_generate_image'));
         add_action('wp_ajax_gwa_edit_image', array($this, 'ajax_edit_image'));
+        add_action('wp_ajax_gwa_get_image_base64', array($this, 'ajax_get_image_base64'));
     }
 
     public function add_settings_page() {
@@ -1027,6 +1028,48 @@ class Pixa_AI_Assistant {
 
         $this->log_error('Gemini Image API Parse Error', 'Response structure: ' . print_r($data, true));
         return new WP_Error('parse_error', 'Unable to parse image API response. Response received but no image data found. Please check WordPress debug logs (wp-content/debug.log) for details.');
+    }
+
+    /**
+     * AJAX handler to convert image URL to base64 (server-side to avoid CORS)
+     */
+    public function ajax_get_image_base64() {
+        check_ajax_referer('pixa_ai_nonce', 'nonce');
+
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error(array('message' => __('Insufficient permissions', 'pixa-ai')));
+            return;
+        }
+
+        $image_url = isset($_POST['image_url']) ? esc_url_raw($_POST['image_url']) : '';
+
+        if (empty($image_url)) {
+            wp_send_json_error(array('message' => __('Image URL is required', 'pixa-ai')));
+            return;
+        }
+
+        // Get the image content
+        $response = wp_remote_get($image_url, array(
+            'timeout' => 30,
+            'sslverify' => false
+        ));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => 'Failed to fetch image: ' . $response->get_error_message()));
+            return;
+        }
+
+        $image_data = wp_remote_retrieve_body($response);
+        
+        if (empty($image_data)) {
+            wp_send_json_error(array('message' => 'Image data is empty'));
+            return;
+        }
+
+        // Convert to base64
+        $base64 = base64_encode($image_data);
+
+        wp_send_json_success(array('base64' => $base64));
     }
 
     /**

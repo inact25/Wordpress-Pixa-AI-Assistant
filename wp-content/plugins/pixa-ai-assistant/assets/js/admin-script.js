@@ -2,12 +2,16 @@
     'use strict';
 
     $(document).ready(function() {
+        console.log('Pixa AI Admin Script Loaded');
+        
         // Check if pixaAiData is defined
         if (typeof pixaAiData === 'undefined') {
             console.error('Pixa AI: Configuration not loaded');
             return;
         }
 
+        console.log('Pixa AI Data:', pixaAiData);
+        
         if (!pixaAiData.hasApiKey) {
             console.warn('Pixa AI: Gemini API key not configured');
         }
@@ -356,10 +360,13 @@
                 $('#gwa-selected-image').attr('src', selectedImageUrl);
                 $('#gwa-selected-image-preview').show();
 
-                // Convert image to base64
-                imageUrlToBase64(selectedImageUrl, function(base64) {
+                // Convert image to base64 using server-side method to avoid CORS
+                console.log('Converting image to base64 (server-side)...', selectedImageUrl);
+                convertImageToBase64ServerSide(selectedImageUrl, function(base64) {
                     selectedImageBase64 = base64;
-                    $('#gwa-edit-image-btn').prop('disabled', false);
+                    console.log('Image converted to base64, length:', base64.length);
+                    $('#gwa-edit-image-btn').prop('disabled', false).css('opacity', '1');
+                    console.log('Edit Image button enabled');
                 });
             });
 
@@ -367,8 +374,13 @@
         });
 
         // Edit image button
-        $('#gwa-edit-image-btn').on('click', function() {
+        $(document).on('click', '#gwa-edit-image-btn', function(e) {
+            e.preventDefault();
+            console.log('Edit Image button clicked');
+            console.log('Selected image base64 length:', selectedImageBase64 ? selectedImageBase64.length : 0);
+            
             const prompt = $('#gwa-edit-prompt').val().trim();
+            console.log('Edit prompt:', prompt);
 
             if (!prompt) {
                 showError('Please describe how you want to edit the image.');
@@ -385,6 +397,7 @@
                 return;
             }
 
+            console.log('Calling editImage function...');
             editImage(selectedImageBase64, prompt);
         });
 
@@ -735,20 +748,32 @@
             });
         }
 
-        function imageUrlToBase64(url, callback) {
-            const xhr = new XMLHttpRequest();
-            xhr.onload = function() {
-                const reader = new FileReader();
-                reader.onloadend = function() {
-                    // Remove data URL prefix to get just the base64 string
-                    const base64 = reader.result.split(',')[1];
-                    callback(base64);
-                };
-                reader.readAsDataURL(xhr.response);
-            };
-            xhr.open('GET', url);
-            xhr.responseType = 'blob';
-            xhr.send();
+        function convertImageToBase64ServerSide(url, callback) {
+            console.log('Requesting server-side image conversion for:', url);
+            
+            $.ajax({
+                url: pixaAiData.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'gwa_get_image_base64',
+                    nonce: pixaAiData.nonce,
+                    image_url: url
+                },
+                success: function(response) {
+                    if (response.success) {
+                        console.log('Server-side conversion successful');
+                        callback(response.data.base64);
+                    } else {
+                        const errorMsg = response.data && response.data.message ? response.data.message : 'Failed to convert image';
+                        console.error('Server-side conversion error:', errorMsg);
+                        showError(errorMsg);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX error during image conversion:', error);
+                    showError('Network error while converting image: ' + error);
+                }
+            });
         }
 
         function showError(message) {
