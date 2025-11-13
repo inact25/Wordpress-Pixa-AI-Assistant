@@ -77,6 +77,7 @@ class Pixa_AI_Assistant {
         $total_generate = 0;
         $total_analyze = 0;
         $total_optimize = 0;
+        $total_generate_image = 0;
         $user_count = 0;
 
         foreach ($users as $user_id) {
@@ -85,13 +86,14 @@ class Pixa_AI_Assistant {
                 $total_generate += isset($usage['generate']) ? $usage['generate'] : 0;
                 $total_analyze += isset($usage['analyze']) ? $usage['analyze'] : 0;
                 $total_optimize += isset($usage['optimize']) ? $usage['optimize'] : 0;
-                if (!empty($usage['generate']) || !empty($usage['analyze']) || !empty($usage['optimize'])) {
+                $total_generate_image += isset($usage['generate_image']) ? $usage['generate_image'] : 0;
+                if (!empty($usage['generate']) || !empty($usage['analyze']) || !empty($usage['optimize']) || !empty($usage['generate_image'])) {
                     $user_count++;
                 }
             }
         }
 
-        $total_requests = $total_generate + $total_analyze + $total_optimize;
+        $total_requests = $total_generate + $total_analyze + $total_optimize + $total_generate_image;
 
         settings_errors('gwa_messages');
         ?>
@@ -164,6 +166,19 @@ class Pixa_AI_Assistant {
                                 <div class="stat-label">SEO Optimized</div>
                             </div>
                         </div>
+                        <div class="pixa-ai-stat-card pixa-ai-stat-purple">
+                            <div class="stat-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#9b59b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                                    <polyline points="21 15 16 10 5 21"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-value"><?php echo number_format($total_generate_image); ?></div>
+                                <div class="stat-label">Images Generated</div>
+                            </div>
+                        </div>
                     </div>
 
                     <?php if ($total_requests > 0):
@@ -210,10 +225,10 @@ class Pixa_AI_Assistant {
                             new Chart(ctx1, {
                                 type: 'doughnut',
                                 data: {
-                                    labels: ['Content Generation', 'Article Analysis', 'SEO Optimization'],
+                                    labels: ['Content Generation', 'Article Analysis', 'SEO Optimization', 'Image Generation'],
                                     datasets: [{
-                                        data: [<?php echo $total_generate; ?>, <?php echo $total_analyze; ?>, <?php echo $total_optimize; ?>],
-                                        backgroundColor: ['#dc143c', '#3d81f5', '#ffc107'],
+                                        data: [<?php echo $total_generate; ?>, <?php echo $total_analyze; ?>, <?php echo $total_optimize; ?>, <?php echo $total_generate_image; ?>],
+                                        backgroundColor: ['#dc143c', '#3d81f5', '#ffc107', '#9b59b6'],
                                         borderWidth: 0
                                     }]
                                 },
@@ -456,6 +471,7 @@ class Pixa_AI_Assistant {
                             <h4>SEO Optimization</h4>
                             <p>Optimize content for better search engine rankings</p>
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -813,12 +829,16 @@ class Pixa_AI_Assistant {
             $usage = array(
                 'generate' => 0,
                 'analyze' => 0,
-                'optimize' => 0
+                'optimize' => 0,
+                'generate_image' => 0
             );
         }
 
         if (isset($usage[$type])) {
             $usage[$type]++;
+        } else {
+            // Initialize new type if it doesn't exist
+            $usage[$type] = 1;
         }
 
         update_user_meta($user_id, $usage_key, $usage);
