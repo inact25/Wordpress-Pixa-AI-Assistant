@@ -9,7 +9,7 @@
         }
 
         if (!pixaAiData.hasApiKey) {
-            console.warn('Pixa AI: API key not configured');
+            console.warn('Pixa AI: Gemini API key not configured');
         }
 
         const floatingButton = `
@@ -28,6 +28,7 @@
                     <div class="gwa-modal-body">
                         <div class="gwa-tabs">
                             <button class="gwa-tab-btn active" data-tab="generate">Generate Content</button>
+                            <button class="gwa-tab-btn" data-tab="image">Generate Image</button>
                             <button class="gwa-tab-btn" data-tab="analyze">Analyze Article</button>
                             <button class="gwa-tab-btn" data-tab="optimize">Optimize for SEO</button>
                         </div>
@@ -60,6 +61,30 @@
                                 <textarea id="gwa-prompt" rows="5" placeholder="Example: Write about the benefits of WordPress plugins for small businesses..."></textarea>
                             </div>
                             <button id="gwa-generate-btn" class="gwa-btn gwa-btn-primary">Generate Content</button>
+                        </div>
+                        
+                        <div id="gwa-image-tab" class="gwa-tab-content">
+                            ${!pixaAiData.hasApiKey ? `
+                            <div class="gwa-warning-box" style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                                <p style="margin: 0; color: #856404;"><strong>⚠️ Gemini API Key Required</strong></p>
+                                <p style="margin: 8px 0 0 0; color: #856404;">To use the image generator, you need to configure your Gemini API key in <a href="options-general.php?page=gemini-writing-assistant" style="color: #856404; text-decoration: underline;">Settings > Pixa AI</a></p>
+                            </div>
+                            ` : ''}
+                            <div class="gwa-info-box">
+                                <p><strong>AI Image Generator (Nano Banana 🍌)</strong></p>
+                                <p>Create unique images using Gemini 2.5 Flash Image model. The generator will:</p>
+                                <ul style="list-style-type: disc;">
+                                    <li>Generate high-quality images with cinematic quality</li>
+                                    <li>Support detailed and creative prompts</li>
+                                    <li>Use advanced AI with temperature and creativity controls</li>
+                                    <li>Provide ready-to-use PNG images for your content</li>
+                                </ul>
+                            </div>
+                            <div class="gwa-form-group">
+                                <label for="gwa-image-prompt">Describe the image you want to generate:</label>
+                                <textarea id="gwa-image-prompt" rows="5" placeholder="Example: A beautiful sunset over mountains with vibrant orange and purple colors, photorealistic style..."></textarea>
+                            </div>
+                            <button id="gwa-generate-image-btn" class="gwa-btn gwa-btn-primary">Generate Image</button>
                         </div>
                         
                         <div id="gwa-analyze-tab" class="gwa-tab-content">
@@ -166,6 +191,22 @@
             generateContent(prompt, tone, language);
         });
 
+        $('#gwa-generate-image-btn').on('click', function() {
+            const prompt = $('#gwa-image-prompt').val().trim();
+
+            if (!prompt) {
+                showError('Please enter a description for the image you want to generate.');
+                return;
+            }
+
+            if (!pixaAiData.hasApiKey) {
+                showError(pixaAiData.strings.error_api_key);
+                return;
+            }
+
+            generateImage(prompt);
+        });
+
         $('#gwa-analyze-btn').on('click', function() {
             if (!pixaAiData.hasApiKey) {
                 showError(pixaAiData.strings.error_api_key);
@@ -209,8 +250,18 @@
         });
 
         $('#gwa-insert-btn').on('click', function() {
-            const content = $('#gwa-result-content').html();
-            insertToEditor(content);
+            const imageData = $('#gwa-result-content').data('imageData');
+            
+            if (imageData) {
+                // Insert image
+                const imagePrompt = $('#gwa-result-content').data('imagePrompt') || 'AI Generated Image';
+                insertImageToEditor(imageData, imagePrompt);
+            } else {
+                // Insert text content
+                const content = $('#gwa-result-content').html();
+                insertToEditor(content);
+            }
+            
             $('#gwa-modal').fadeOut(200);
             resetModal();
         });
@@ -245,6 +296,47 @@
                             showRetryMessage('API is busy. Retrying in ' + (delay/1000) + ' seconds...');
                             setTimeout(function() {
                                 generateContent(prompt, tone, language, retryCount + 1);
+                            }, delay);
+                        } else {
+                            showError(errorMsg);
+                        }
+                    }
+                },
+                error: function(xhr, status, error) {
+                    hideLoading();
+                    showError('Network error: ' + error);
+                }
+            });
+        }
+
+        function generateImage(prompt, retryCount) {
+            retryCount = retryCount || 0;
+            const maxRetries = 2;
+            
+            showLoading();
+
+            $.ajax({
+                url: pixaAiData.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'gwa_generate_image',
+                    nonce: pixaAiData.nonce,
+                    prompt: prompt
+                },
+                success: function(response) {
+                    hideLoading();
+
+                    if (response.success) {
+                        showImageResult(response.data.image, prompt);
+                    } else {
+                        const errorMsg = response.data && response.data.message ? response.data.message : 'An error occurred';
+                        
+                        // Check if it's a retryable error
+                        if (retryCount < maxRetries && errorMsg.includes('overloaded')) {
+                            const delay = Math.pow(2, retryCount) * 1000;
+                            showRetryMessage('API is busy. Retrying in ' + (delay/1000) + ' seconds...');
+                            setTimeout(function() {
+                                generateImage(prompt, retryCount + 1);
                             }, delay);
                         } else {
                             showError(errorMsg);
@@ -364,6 +456,28 @@
             }
         }
 
+        function insertImageToEditor(imageData, altText) {
+            if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch('core/editor')) {
+                // For Gutenberg editor, create an image block
+                const imageBlock = wp.blocks.createBlock('core/image', {
+                    url: imageData,
+                    alt: altText,
+                    caption: ''
+                });
+                const currentBlocks = wp.data.select('core/editor').getBlocks();
+                wp.data.dispatch('core/editor').insertBlocks(imageBlock, currentBlocks.length);
+            } else if (typeof tinymce !== 'undefined' && tinymce.activeEditor) {
+                // For classic editor
+                const imageHtml = '<img src="' + imageData + '" alt="' + altText + '" style="max-width: 100%; height: auto;" />';
+                tinymce.activeEditor.insertContent(imageHtml);
+            } else if ($('#content').length) {
+                // For plain textarea
+                const imageHtml = '<img src="' + imageData + '" alt="' + altText + '" style="max-width: 100%; height: auto;" />';
+                const currentContent = $('#content').val();
+                $('#content').val(currentContent + '\n\n' + imageHtml);
+            }
+        }
+
         function showLoading() {
             // Hide everything and show only loading
             $('.gwa-tab-content').hide();
@@ -412,6 +526,25 @@
             $('#gwa-result').show();
         }
 
+        function showImageResult(imageData, prompt) {
+            const imageHtml = '<div class="gwa-image-preview">' +
+                '<img src="' + imageData + '" alt="Generated Image" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />' +
+                '<p style="margin-top: 10px; color: #666; font-style: italic;">Prompt: ' + prompt + '</p>' +
+                '</div>';
+
+            $('#gwa-result-header h3').text('Generated Image');
+            $('#gwa-insert-btn').text('Insert Image to Editor').show();
+            $('#gwa-result-content').html(imageHtml);
+
+            // Store image data for insertion
+            $('#gwa-result-content').data('imageData', imageData);
+            $('#gwa-result-content').data('imagePrompt', prompt);
+
+            // Hide all tab content forms and show result
+            $('.gwa-tab-content').hide();
+            $('#gwa-result').show();
+        }
+
         function showError(message) {
             $('#gwa-error').html('<strong>Error:</strong> ' + message).show();
             // Show the active tab when error occurs
@@ -431,9 +564,12 @@
 
         function resetModal() {
             $('#gwa-prompt').val('');
+            $('#gwa-image-prompt').val('');
             $('#gwa-result').hide();
             $('#gwa-error').hide();
             $('#gwa-loading').hide();
+            $('#gwa-result-content').removeData('imageData').removeData('imagePrompt');
+            $('#gwa-insert-btn').text('Insert to Editor');
         }
     });
 

@@ -219,7 +219,8 @@
     border-color: #3d81f5;
 }
 
-#gwa-prompt {
+#gwa-prompt,
+#gwa-image-prompt {
     width: 100%;
     padding: 12px;
     border: 2px solid #e2e8f0;
@@ -230,7 +231,8 @@
     transition: border-color 0.2s;
 }
 
-#gwa-prompt:focus {
+#gwa-prompt:focus,
+#gwa-image-prompt:focus {
     outline: none;
     border-color: #3d81f5;
 }
@@ -332,6 +334,25 @@
 
 .gwa-error strong {
     font-weight: 600;
+}
+
+.gwa-image-preview {
+    text-align: center;
+}
+
+.gwa-image-preview img {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+    height: auto;
+}
+
+.gwa-image-preview p {
+    margin-top: 12px;
+    font-size: 13px;
+    color: #64748b;
+    font-style: italic;
+    word-break: break-word;
 }
 
 @media (max-width: 768px) {

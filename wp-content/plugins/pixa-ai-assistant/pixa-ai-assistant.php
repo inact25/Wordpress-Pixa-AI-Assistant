@@ -20,6 +20,7 @@ class Pixa_AI_Assistant {
 
     private $option_name = 'pixa_ai_api_key';
     private $model_option_name = 'pixa_ai_model';
+    private $image_model_option_name = 'pixa_ai_image_model';
     private $max_content_length = 50000; // 50KB limit
     private $rate_limit_seconds = 10; // Rate limit cooldown
 
@@ -30,6 +31,7 @@ class Pixa_AI_Assistant {
         add_action('wp_ajax_gwa_generate_content', array($this, 'ajax_generate_content'));
         add_action('wp_ajax_gwa_analyze_content', array($this, 'ajax_analyze_content'));
         add_action('wp_ajax_gwa_optimize_seo', array($this, 'ajax_optimize_seo'));
+        add_action('wp_ajax_gwa_generate_image', array($this, 'ajax_generate_image'));
     }
 
     public function add_settings_page() {
@@ -52,6 +54,12 @@ class Pixa_AI_Assistant {
             'type' => 'string',
             'sanitize_callback' => 'sanitize_text_field',
             'default' => 'gemini-2.5-flash'
+        ));
+
+        register_setting('gwa_settings', $this->image_model_option_name, array(
+            'type' => 'string',
+            'sanitize_callback' => 'sanitize_text_field',
+            'default' => 'gemini-2.5-flash-image'
         ));
     }
 
@@ -302,45 +310,80 @@ class Pixa_AI_Assistant {
                                    class="pixa-ai-input"
                                    placeholder="Enter your Gemini API key">
                             <p class="pixa-ai-help">
-                                Get your API key from <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio →</a>
+                                Get your API key from <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio →</a>
+                                <br><strong>Note:</strong> This API key works for both text generation and image generation (Gemini image models).
                             </p>
                         </div>
-
-                        <div class="pixa-ai-form-group">
-                            <label for="<?php echo $this->model_option_name; ?>">
-                                <span class="label-icon">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#3d81f5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                                    </svg>
-                                </span>
-                                AI Model
-                            </label>
-                            <select id="<?php echo $this->model_option_name; ?>"
-                                    name="<?php echo $this->model_option_name; ?>"
-                                    class="pixa-ai-select">
-                                <?php
-                                $models = array(
-                                    'gemini-2.5-pro' => 'Gemini 2.5 Pro - Highest Quality',
-                                    'gemini-2.5-flash' => 'Gemini 2.5 Flash - Recommended ⭐',
-                                    'gemini-2.5-flash-lite' => 'Gemini 2.5 Flash Lite - Fastest',
-                                    'gemini-2.0-flash' => 'Gemini 2.0 Flash',
-                                    'gemini-2.0-flash-lite' => 'Gemini 2.0 Flash Lite',
-                                    'gemini-1.5-pro' => 'Gemini 1.5 Pro',
-                                    'gemini-1.5-flash' => 'Gemini 1.5 Flash',
-                                    'gemini-1.0-pro' => 'Gemini 1.0 Pro',
-                                    'gemini-1.0-flash' => 'Gemini 1.0 Flash'
-                                );
-                                $selected_model = get_option($this->model_option_name, 'gemini-2.5-flash');
-                                foreach ($models as $value => $label) {
-                                    $selected = ($selected_model === $value) ? 'selected' : '';
-                                    echo '<option value="' . esc_attr($value) . '" ' . $selected . '>' . esc_html($label) . '</option>';
-                                }
-                                ?>
-                            </select>
-                            <p class="pixa-ai-help">
-                                Choose the AI model for content generation. Flash models offer best speed/quality balance.
-                            </p>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div class="pixa-ai-form-group">
+                                <label for="<?php echo $this->model_option_name; ?>">
+                                    <span class="label-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#3d81f5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                                        </svg>
+                                    </span>
+                                    AI Model (Text Generation)
+                                </label>
+                                <select id="<?php echo $this->model_option_name; ?>"
+                                        name="<?php echo $this->model_option_name; ?>"
+                                        class="pixa-ai-select">
+                                    <?php
+                                    $models = array(
+                                        'gemini-2.5-pro' => 'Gemini 2.5 Pro - Highest Quality',
+                                        'gemini-2.5-flash' => 'Gemini 2.5 Flash - Recommended ⭐',
+                                        'gemini-2.5-flash-lite' => 'Gemini 2.5 Flash Lite - Fastest',
+                                        'gemini-2.0-flash' => 'Gemini 2.0 Flash',
+                                        'gemini-2.0-flash-lite' => 'Gemini 2.0 Flash Lite',
+                                        'gemini-1.5-pro' => 'Gemini 1.5 Pro',
+                                        'gemini-1.5-flash' => 'Gemini 1.5 Flash',
+                                        'gemini-1.0-pro' => 'Gemini 1.0 Pro',
+                                        'gemini-1.0-flash' => 'Gemini 1.0 Flash'
+                                    );
+                                    $selected_model = get_option($this->model_option_name, 'gemini-2.5-flash');
+                                    foreach ($models as $value => $label) {
+                                        $selected = ($selected_model === $value) ? 'selected' : '';
+                                        echo '<option value="' . esc_attr($value) . '" ' . $selected . '>' . esc_html($label) . '</option>';
+                                    }
+                                    ?>
+                                </select>
+                                <p class="pixa-ai-help">
+                                    Choose the AI model for content generation. Flash models offer best speed/quality balance.
+                                </p>
+                            </div>
+                            <div class="pixa-ai-form-group">
+                                <label for="<?php echo $this->image_model_option_name; ?>">
+                                    <span class="label-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#28a745" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                            <circle cx="8.5" cy="8.5" r="1.5"/>
+                                            <polyline points="21 15 16 10 5 21"/>
+                                        </svg>
+                                    </span>
+                                    Image Generation Model
+                                </label>
+                                <select id="<?php echo $this->image_model_option_name; ?>"
+                                        name="<?php echo $this->image_model_option_name; ?>"
+                                        class="pixa-ai-select">
+                                    <?php
+                                    $image_models = array(
+                                        'gemini-2.5-flash-image' => 'Gemini 2.5 Flash Image (Nano Banana 🍌) - Recommended ⭐',
+                                        'gemini-2.0-flash-exp-image-01' => 'Gemini 2.0 Flash Experimental',
+                                        'gemini-1.5-flash-image' => 'Gemini 1.5 Flash Image',
+                                        'gemini-1.5-pro-image' => 'Gemini 1.5 Pro Image'
+                                    );
+                                    $selected_image_model = get_option($this->image_model_option_name, 'gemini-2.5-flash-image');
+                                    foreach ($image_models as $value => $label) {
+                                        $selected = ($selected_image_model === $value) ? 'selected' : '';
+                                        echo '<option value="' . esc_attr($value) . '" ' . $selected . '>' . esc_html($label) . '</option>';
+                                    }
+                                    ?>
+                                </select>
+                                <p class="pixa-ai-help">
+                                    Choose the image generation model. Gemini 2.5 Flash Image (Nano Banana) offers fast and high-quality image generation with cinematic quality.
+                                    <br><strong style="color: crimson;">Image generation requires a Paid Subscription plan from Google AI Studio.</strong>
+                                </p>
+                            </div>
                         </div>
 
                         <div class="pixa-ai-form-actions">
@@ -820,6 +863,138 @@ class Pixa_AI_Assistant {
             return new WP_Error('content_too_long', __('Content is too long. Please reduce the article length.', 'pixa-ai'));
         }
         return true;
+    }
+
+    /**
+     * AJAX handler for image generation
+     */
+    public function ajax_generate_image() {
+        check_ajax_referer('pixa_ai_nonce', 'nonce');
+
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error(array('message' => __('Insufficient permissions', 'pixa-ai')));
+            return;
+        }
+
+        if (!$this->check_rate_limit()) {
+            wp_send_json_error(array('message' => __('Please wait before making another request', 'pixa-ai')));
+            return;
+        }
+
+        $prompt = isset($_POST['prompt']) ? sanitize_textarea_field($_POST['prompt']) : '';
+
+        if (empty($prompt)) {
+            wp_send_json_error(array('message' => __('Image prompt is required', 'pixa-ai')));
+            return;
+        }
+
+        if (strlen($prompt) > 2000) {
+            wp_send_json_error(array('message' => __('Prompt is too long. Please keep it under 2000 characters.', 'pixa-ai')));
+            return;
+        }
+
+        $api_key = get_option($this->option_name);
+
+        if (empty($api_key)) {
+            wp_send_json_error(array('message' => __('API key not configured. Please add your Gemini API key in Settings > Pixa AI', 'pixa-ai')));
+            return;
+        }
+
+        $image_data = $this->generate_image_with_gemini($api_key, $prompt);
+
+        if (is_wp_error($image_data)) {
+            $this->log_error('Generate Image Error', $image_data->get_error_message());
+            wp_send_json_error(array('message' => $image_data->get_error_message()));
+            return;
+        }
+
+        // Track usage
+        $this->track_api_usage('generate_image');
+
+        wp_send_json_success(array('image' => $image_data));
+    }
+
+    /**
+     * Generate image using Gemini Image Generation API
+     */
+    private function generate_image_with_gemini($api_key, $prompt) {
+        $image_model = get_option($this->image_model_option_name, 'gemini-2.5-flash-image');
+
+        // Use the correct API endpoint format with key parameter
+        $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . $image_model . ':generateContent?key=' . $api_key;
+
+        $body = json_encode(array(
+            'contents' => array(
+                array(
+                    'parts' => array(
+                        array('text' => $prompt)
+                    )
+                )
+            ),
+        ));
+
+        $response = wp_remote_post($url, array(
+            'headers' => array(
+                'Content-Type' => 'application/js0on'
+            ),
+            'body' => $body,
+            'timeout' => 90
+        ));
+
+        if (is_wp_error($response)) {
+            $this->log_error('Gemini Image API Request Error', $response->get_error_message());
+            return $response;
+        }
+
+        $response_code = wp_remote_retrieve_response_code($response);
+        $response_body = wp_remote_retrieve_body($response);
+
+        // Log the response for debugging
+        $this->log_error('Gemini Image API Response Code', $response_code);
+        $this->log_error('Gemini Image API Response Body', substr($response_body, 0, 1000));
+
+        if ($response_code !== 200) {
+            // Try to extract meaningful error message
+            $data = json_decode($response_body, true);
+            $error_message = 'Gemini Image API error';
+
+            if (isset($data['error']['message'])) {
+                $error_message .= ': ' . $data['error']['message'];
+            } elseif (isset($data['error']['status'])) {
+                $error_message .= ' (' . $data['error']['status'] . ')';
+                if (isset($data['error']['details'])) {
+                    $error_message .= ': ' . json_encode($data['error']['details']);
+                }
+            } elseif (isset($data['error'])) {
+                $error_message .= ': ' . json_encode($data['error']);
+            } else {
+                $error_message .= ' (HTTP ' . $response_code . '): ' . substr($response_body, 0, 200);
+            }
+
+            return new WP_Error('api_error', $error_message);
+        }
+
+        $data = json_decode($response_body, true);
+
+        // Check for generated image in the response structure
+        // Response format: candidates[0].content.parts[].inline_data.data
+        if (isset($data['candidates'][0]['content']['parts'])) {
+            foreach ($data['candidates'][0]['content']['parts'] as $part) {
+                if (isset($part['inline_data']['data'])) {
+                    return 'data:image/png;base64,' . $part['inline_data']['data'];
+                }
+            }
+        }
+
+        // Fallback: check other possible formats
+        if (isset($data['predictions'][0]['bytesBase64Encoded'])) {
+            return 'data:image/png;base64,' . $data['predictions'][0]['bytesBase64Encoded'];
+        } elseif (isset($data['generatedImages'][0]['imageBytes'])) {
+            return 'data:image/png;base64,' . $data['generatedImages'][0]['imageBytes'];
+        }
+
+        $this->log_error('Gemini Image API Parse Error', 'Response structure: ' . print_r($data, true));
+        return new WP_Error('parse_error', 'Unable to parse image API response. Response received but no image data found. Please check WordPress debug logs (wp-content/debug.log) for details.');
     }
 }
 
